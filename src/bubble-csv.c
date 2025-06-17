@@ -1,13 +1,12 @@
 #include <stdio.h>
-include <stdlib.h>
 
 #define MAX_LINE_LENGTH 1024
 #define MAX_FIELDS 100
 
 int main() {
-
     FILE *file;
-    char linha(MAX_LINE_LENGTH);
+
+    char linha[MAX_LINE_LENGTH];
     char campos[MAX_FIELDS];
     int i;
 
@@ -15,7 +14,7 @@ int main() {
     file = fileopen("nome do arquivo", "r");
     if (file == NULL) {
         perror("Erro ao abrir o arquivo\n");
-        return EXIT_FAILURE;
+        return 1;
     }
 
 
@@ -32,11 +31,12 @@ int main() {
         token = strtok(NULL, ",");
     }
 
-    for(int j; j < i; j++ {
+    for(int j; j < i; j++) {
         printf("%s\n", campos[j]);
     }
+    
     printf("\n");
 
-fclose(file);
-return EXIT_SUCCESS;
+    fclose(file);
+    return 0;
 }
