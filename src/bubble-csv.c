@@ -1,44 +1,23 @@
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 
-#define MAX_LINE_LENGTH 1024
-#define MAX_FIELDS 100
+#define TAMANHO_LINHA 1024
 
-int main() {
-    FILE *file;
+int main(int argc, char *argv[]) {
+    FILE *arquivo;
 
-    char linha[MAX_LINE_LENGTH];
-    char campos[MAX_FIELDS];
-    int i;
+    if (!argv[1]) {
+        perror("Uso: bubble-csv <nome do arquivo>\n");
+        return 1;
+    }
 
+    arquivo = fopen(argv[1], "r");
 
-    file = fopen("nome do arquivo", "r");
-    if (file == NULL) {
+    if (arquivo == NULL) {
         perror("Erro ao abrir o arquivo\n");
         return 1;
     }
 
+    char linha[TAMANHO_LINHA];
 
-    while (fgets(linha, sizeof(linha), file)) {
-        for (i = 0; i < MAX_FIELDS; i++) {
-            campos[i] = NULL;
-        }
-    }
-
-    char *token = strtok(linha, ",");
-    i = 0;
-    while (token != NULL && i < MAX_FIELDS) {
-        campos[i++] = token;
-        token = strtok(NULL, ",");
-    }
-
-    for(int j; j < i; j++) {
-        printf("%s\n", campos[j]);
-    }
-    
-    printf("\n");
-
-    fclose(file);
-    return 0;
+    while (fgets(linha, TAMANHO_LINHA, arquivo)) printf("%s", linha);
 }
