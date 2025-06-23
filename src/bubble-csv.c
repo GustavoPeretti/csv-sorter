@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 #define MAX_LINE_LENGTH 1024
 #define MAX_FIELDS 100
@@ -11,7 +13,7 @@ int main() {
     int i;
 
 
-    file = fileopen("nome do arquivo", "r");
+    file = fopen("nome do arquivo", "r");
     if (file == NULL) {
         perror("Erro ao abrir o arquivo\n");
         return 1;
