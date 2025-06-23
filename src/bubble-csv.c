@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #define TAMANHO_LINHA 1024
 
@@ -6,7 +7,7 @@ int main(int argc, char *argv[]) {
     FILE *arquivo;
 
     if (!argv[1]) {
-        perror("Uso: bubble-csv <nome do arquivo>\n");
+        fprintf(stderr, "Uso: bubble-csv <nome do arquivo>\n");
         return 1;
     }
 
@@ -20,4 +21,15 @@ int main(int argc, char *argv[]) {
     char linha[TAMANHO_LINHA];
 
     while (fgets(linha, TAMANHO_LINHA, arquivo)) printf("%s", linha);
+
+    puts("");
+
+    printf("%s\n", linha);
+
+    char *sub = strtok(linha, ",");
+
+    while (sub) {
+        puts(sub);   
+        sub = strtok(NULL, ",");
+    }
 }
