@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define TAMANHO_LINHA 1024
@@ -35,16 +36,23 @@ int main(int argc, char *argv[]) {
     char *elementos[MAX_ELEMENTOS];
     int contador = 0;
 
-    while (fgets(linha, TAMANHO_LINHA, arquivo)) printf("%s", linha);
-
-    puts("");
-
-    printf("%s\n", linha);
-
-    char *sub = strtok(linha, ",");
-
-    while (sub) {
-        puts(sub);   
-        sub = strtok(NULL, ",");
+    if (fgets(linha, TAMANHO_LINHA, arquivo)) {
+        //Strtok vai dividir a linha em elementos
+        char *sub = strtok(linha, ",");
+        while (sub && contador < MAX_ELEMENTOS) {
+            elementos[contador++] = strdup(sub);
+            sub = strtok(NULL, ",");
+        }
     }
+
+    fclose(arquivo);
+
+   bubble_sort(elementos,contador);
+
+   printf("Elementos ordenados:\n");
+   for (int i = 0; i < contador; i++) {
+       printf("%s\n", elementos[i]);
+       free(elementos[i]); // isso vai liberar a memória alocada, segundo o golgue.
+   }
+   return 0;
 }
