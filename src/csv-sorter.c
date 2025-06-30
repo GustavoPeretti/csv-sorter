@@ -2,241 +2,178 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdbool.h>
 
 #define TAMANHO_LINHA 1024
 #define MAX_LINHAS 40000
+#define MAX_COLUNAS 10000
 
-// Estrutura para armazenar os dados de uma linha de forma mais organizada
 typedef struct {
-    char *gender;
-    double hours_studied;
-    char *tutoring;
-    char *region;
-    double attendance_percent;
-    char *parent_education;
-    double exam_score;
-} StudentData;
+    char **campos;
+    int num_campos;
+    bool eh_cabecalho;
+} LinhaCSV;
 
-// Função para remover espaços em branco do início e fim de uma string
-char *trim_whitespace(char *str) {
+void liberar_memoria(LinhaCSV *linhas, int n);
+
+char* trim_whitespace(char* str) {
     char *end;
-
-    // Trim leading space
     while(isspace((unsigned char)*str)) str++;
-
-    if(*str == 0)
-        return str;
-
-    // Trim trailing space
+    if(*str == 0) return str;
     end = str + strlen(str) - 1;
     while(end > str && isspace((unsigned char)*end)) end--;
-
-    // Write new null terminator
     *(end+1) = 0;
-
     return str;
 }
 
-// Função para extrair um valor numérico de uma coluna específica da linha
-// A linha original não é modificada (const char*)
-double extrair_valor_coluna(const char *linha, int coluna_alvo) {
-    if (linha == NULL || strlen(linha) == 0) {
-        return 0.0;
-    }
+bool eh_numero(const char *str) {
+    if (str == NULL || *str == '\0') return false;
 
-    // Cria uma cópia da linha para que strtok possa modificá-la
-    char temp_linha[TAMANHO_LINHA];
-    strncpy(temp_linha, linha, TAMANHO_LINHA - 1);
-    temp_linha[TAMANHO_LINHA - 1] = '\0'; // Garante terminação nula
+    int pontos = 0;
+    bool digitos = false;
+    const char *ptr = str;
 
-    char *token;
-    double valor = 0.0;
-    int coluna_atual = 0;
+    if (*ptr == '-' || *ptr == '+') ptr++;
 
-    // Percorre os tokens da linha
-    token = strtok(temp_linha, ",");
-    while (token != NULL) {
-        if (coluna_atual == coluna_alvo) {
-            valor = atof(token); // Converte o token para double
-            break; // Encontrou o valor, pode sair
+    while (*ptr) {
+        if (*ptr == '.') {
+            if (++pontos > 1) return false;
+        } else if (!isdigit(*ptr)) {
+            return false;
+        } else {
+            digitos = true;
         }
-        token = strtok(NULL, ","); // Pega o próximo token
-        coluna_atual++;
+        ptr++;
     }
-    return valor;
+    return digitos;
 }
 
-// Função para ordenar os dados usando Bubble Sort
-// Agora recebe um ponteiro para ponteiros de char (char**) para as linhas
-// e um ponteiro para double (double*) para os valores
-void bubble_sort_dados_alunos(char **dados, double *valores, int n) {
-    if (n <= 1) return; // Não há nada para ordenar se houver 0 ou 1 linha
+int comparar_campos(const char *str1, const char *str2) {
+    bool str1_numero = eh_numero(str1);
+    bool str2_numero = eh_numero(str2);
 
-    for (int i = 0; i < n - 1; i++) {
-        int trocado = 0;
-        for (int j = 0; j < n - i - 1; j++) {
-            if (valores[j] > valores[j + 1]) {
-                // Troca os valores numéricos
-                double temp_valor = valores[j];
-                valores[j] = valores[j + 1];
-                valores[j + 1] = temp_valor;
+    if (str1_numero && str2_numero) {
+        double num1 = atof(str1);
+        double num2 = atof(str2);
+        if (num1 > num2) return -1; // decrescente
+        if (num1 < num2) return 1;
+        return 0;
+    } else if (str1_numero) {
+        return -1;
+    } else if (str2_numero) {
+        return 1;
+    } else {
+        return strcmp(str2, str1); // ordem alfabética decrescente
+    }
+}
 
-                // Troca os PONTEIROS para as linhas correspondentes
-                // Isso é muito mais eficiente do que copiar strings grandes
-                char *temp_linha_ptr = dados[j];
-                dados[j] = dados[j + 1];
-                dados[j + 1] = temp_linha_ptr;
-
-                trocado = 1; // Indica que houve uma troca nesta passagem
+void bubble_sort_dados_linhas(LinhaCSV *linhas, int n, int coluna_alvo) {
+    for (int i = 1; i < n - 1; i++) { // começa no índice 1, pula o cabeçalho
+        for (int j = 1; j < n - i; j++) {
+            if (comparar_campos(linhas[j].campos[coluna_alvo],
+                                linhas[j+1].campos[coluna_alvo]) > 0) {
+                LinhaCSV temp = linhas[j];
+                linhas[j] = linhas[j + 1];
+                linhas[j + 1] = temp;
             }
         }
-        if (!trocado) {
-            break; // Se nenhuma troca foi feita, o array já está ordenado
+    }
+}
+
+void imprimir_linha_formatada(const LinhaCSV *linha) {
+    for (int i = 0; i < linha->num_campos; i++) {
+        printf("%-20s ", linha->campos[i]);
+    }
+    printf("\n");
+}
+
+void liberar_memoria(LinhaCSV *linhas, int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < linhas[i].num_campos; j++) {
+            free(linhas[i].campos[j]);
         }
+        free(linhas[i].campos);
     }
+    free(linhas);
 }
-
-// Função para imprimir uma linha formatada em colunas
-void imprimir_linha_formatada(const char *linha_csv) {
-    char temp_linha[TAMANHO_LINHA];
-    strncpy(temp_linha, linha_csv, TAMANHO_LINHA - 1);
-    temp_linha[TAMANHO_LINHA - 1] = '\0';
-
-    char *token;
-    char *fields[7]; // Array para armazenar os campos da linha
-    int field_count = 0;
-
-    // Extrai todos os campos da linha
-    token = strtok(temp_linha, ",");
-    while (token != NULL && field_count < 7) {
-        fields[field_count] = trim_whitespace(token); // Remove espaços em branco
-        field_count++;
-        token = strtok(NULL, ",");
-    }
-
-    // Imprime as 7 primeiras colunas formatadas
-    // Ajuste os %-Xs para o tamanho desejado de cada coluna
-    // Ex: %-10s para string alinhada à esquerda com 10 caracteres
-    // Ex: %-8.1f para float com 1 casa decimal, alinhado à esquerda com 8 caracteres
-    if (field_count >= 7) { // Garante que há pelo menos 7 campos
-        printf("%-20s %-20s %-20s %-20s %-20s %-20s %-20s\n",
-               fields[0], // Gender
-               fields[1], // HoursStudied/Week (como string, para manter o alinhamento)
-               fields[2], // Tutoring
-               fields[3], // Region
-               fields[4], // Attendance(%) (como string, para manter o alinhamento)
-               fields[5], // Parent Education
-               fields[6]  // Exam Score
-              );
-    } else {
-        // Caso a linha não tenha campos suficientes, imprime a linha original ou um erro
-        printf("Linha mal formatada: %s\n", linha_csv);
-    }
-}
-
 
 int main(int argc, char *argv[]) {
-    // Verifica se o número correto de argumentos foi fornecido
     if (argc != 3) {
         printf("Uso: %s <arquivo.csv> <coluna_para_ordenar>\n", argv[0]);
-        printf("Exemplo: %s alunos.csv 6 (para ordenar por nota)\n", argv[0]);
-        return 1; // Retorna código de erro
+        printf("Colunas começam em 0 (0 = primeira coluna)\n");
+        return 1;
     }
 
-    int coluna_alvo = atoi(argv[2]); // Converte o argumento da coluna para inteiro
-    FILE *arquivo = fopen(argv[1], "r"); // Tenta abrir o arquivo
-
-    // Verifica se o arquivo foi aberto com sucesso
+    int coluna_alvo = atoi(argv[2]);
+    FILE *arquivo = fopen(argv[1], "r");
     if (arquivo == NULL) {
-        printf("Erro: Arquivo '%s' não encontrado ou não pode ser aberto.\n", argv[1]);
-        return 1; // Retorna código de erro
+        printf("Erro: Não foi possível abrir o arquivo '%s'\n", argv[1]);
+        return 1;
     }
 
-    char linha_buffer[TAMANHO_LINHA]; // Buffer temporário para ler cada linha do arquivo
-
-    // ALOCAÇÃO DINÂMICA DE MEMÓRIA PARA AS LINHAS E VALORES
-    // 'dados' será um array de ponteiros para char (char**), onde cada ponteiro apontará para uma linha (string)
-    char **dados = (char **)malloc(MAX_LINHAS * sizeof(char *));
-    // 'valores' será um array de doubles (double*)
-    double *valores = (double *)malloc(MAX_LINHAS * sizeof(double));
-
-    // Verifica se a alocação de memória foi bem-sucedida
-    if (dados == NULL || valores == NULL) {
-        perror("Erro ao alocar memoria dinamica");
-        // Libera qualquer memória que possa ter sido alocada antes de sair
-        if (dados != NULL) free(dados);
-        if (valores != NULL) free(valores);
+    LinhaCSV *linhas = (LinhaCSV *)malloc(MAX_LINHAS * sizeof(LinhaCSV));
+    if (linhas == NULL) {
+        perror("Erro ao alocar memória");
         fclose(arquivo);
-        return 1; // Retorna código de erro
+        return 1;
     }
 
-    int num_linhas = 0; // Contador de linhas lidas e armazenadas
+    char linha_buffer[TAMANHO_LINHA];
+    int num_linhas = 0;
 
-    // Lê e armazena o cabeçalho do arquivo (primeira linha)
+    // Processa o cabeçalho
     if (fgets(linha_buffer, TAMANHO_LINHA, arquivo) == NULL) {
-        printf("Erro: Arquivo vazio ou erro de leitura do cabeçalho.\n");
-        // Libera a memória alocada antes de sair
-        free(dados);
-        free(valores);
+        printf("Erro: Arquivo vazio\n");
         fclose(arquivo);
-        return 1; // Retorna código de erro
+        free(linhas);
+        return 1;
     }
-    // Remove a quebra de linha do cabeçalho
+
     linha_buffer[strcspn(linha_buffer, "\n")] = '\0';
+    linhas[num_linhas].num_campos = 0;
+    linhas[num_linhas].campos = malloc(MAX_COLUNAS * sizeof(char *));
+    linhas[num_linhas].eh_cabecalho = true;
 
-    // Imprime o cabeçalho formatado
-    imprimir_linha_formatada(linha_buffer); // Imprime o cabeçalho formatado
+    char *token = strtok(linha_buffer, ",");
+    while (token != NULL && linhas[num_linhas].num_campos < MAX_COLUNAS) {
+        linhas[num_linhas].campos[linhas[num_linhas].num_campos] = strdup(trim_whitespace(token));
+        linhas[num_linhas].num_campos++;
+        token = strtok(NULL, ",");
+    }
+    num_linhas++;
 
-    // Lê cada linha restante do arquivo até o fim ou até MAX_LINHAS
-    while (fgets(linha_buffer, TAMANHO_LINHA, arquivo) != NULL) {
-        // Remove o caractere de nova linha ('\n') do final da string, se existir
+    // Processa as linhas de dados
+    while (num_linhas < MAX_LINHAS && fgets(linha_buffer, TAMANHO_LINHA, arquivo) != NULL) {
         linha_buffer[strcspn(linha_buffer, "\n")] = '\0';
-
-        // Processa a linha apenas se não for vazia
         if (strlen(linha_buffer) > 0) {
-            // Aloca memória para a string da linha atual
-            // strlen(linha_buffer) + 1 para incluir o caractere nulo de terminação '\0'
-            dados[num_linhas] = (char *)malloc(strlen(linha_buffer) + 1);
+            linhas[num_linhas].num_campos = 0;
+            linhas[num_linhas].campos = malloc(MAX_COLUNAS * sizeof(char *));
+            linhas[num_linhas].eh_cabecalho = false;
 
-            // Verifica se a alocação para a linha individual foi bem-sucedida
-            if (dados[num_linhas] == NULL) {
-                perror("Erro ao alocar memoria para linha individual");
-                // Libera toda a memória alocada até o momento antes de sair
-                for (int i = 0; i < num_linhas; i++) {
-                    free(dados[i]);
-                }
-                free(dados);
-                free(valores);
-                fclose(arquivo);
-                return 1; // Retorna código de erro
+            token = strtok(linha_buffer, ",");
+            while (token != NULL && linhas[num_linhas].num_campos < MAX_COLUNAS) {
+                linhas[num_linhas].campos[linhas[num_linhas].num_campos] = strdup(trim_whitespace(token));
+                linhas[num_linhas].num_campos++;
+                token = strtok(NULL, ",");
             }
-
-            // Copia o conteúdo do buffer temporário para a memória alocada dinamicamente
-            strcpy(dados[num_linhas], linha_buffer);
-
-            // Extrai o valor da coluna alvo da linha e armazena no array 'valores'
-            valores[num_linhas] = extrair_valor_coluna(linha_buffer, coluna_alvo);
-
-            num_linhas++; // Incrementa o contador de linhas processadas
+            num_linhas++;
         }
     }
-    fclose(arquivo); // Fecha o arquivo após a leitura
+    fclose(arquivo);
 
-    // Ordena os dados usando o Bubble Sort
-    bubble_sort_dados_alunos(dados, valores, num_linhas);
-
-    // Exibe os resultados ordenados, linha por linha, formatados
-    for (int i = 0; i < num_linhas; i++) {
-        imprimir_linha_formatada(dados[i]);
+    if (coluna_alvo < 0 || coluna_alvo >= linhas[0].num_campos) {
+        printf("Erro: Coluna %d inválida. O arquivo tem %d colunas.\n", coluna_alvo, linhas[0].num_campos);
+        liberar_memoria(linhas, num_linhas);
+        return 1;
     }
 
-    // LIBERAÇÃO DA MEMÓRIA ALOCADA DINAMICAMENTE
-    // É crucial liberar toda a memória para evitar vazamentos (memory leaks)
-    for (int i = 0; i < num_linhas; i++) {
-        free(dados[i]); // Libera a memória de cada string de linha individual
-    }
-    free(dados);   // Libera a memória do array de ponteiros para as linhas
-    free(valores); // Libera a memória do array de valores numéricos
+    bubble_sort_dados_linhas(linhas, num_linhas, coluna_alvo);
 
-    return 0; // Retorna 0 para indicar sucesso
+    // Imprime todas as linhas (cabeçalho primeiro)
+    for (int i = 0; i < num_linhas; i++) {
+        imprimir_linha_formatada(&linhas[i]);
+    }
+
+    liberar_memoria(linhas, num_linhas);
+    return 0;
 }
