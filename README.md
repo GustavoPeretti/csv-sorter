@@ -9,5 +9,5 @@ Aplicação do algoritmo Bubble Sort para ordenar linhas por colunas em arquivos
 - **Licença**: [MIT](https://www.mit.edu/~amini/LICENSE.md)
 
 - **Título**: [Diabetes Dataset](https://www.kaggle.com/datasets/akshaydattatraykhare/diabetes-dataset)
-- **Autor**:: [akshaydattatraykhare (Akshay Dattatray Khare)]()
+- **Autor**:: [akshaydattatraykhare (Akshay Dattatray Khare)](https://www.kaggle.com/akshaydattatraykhare)
 - **Licença**: [CC0: Public Domain](https://creativecommons.org/publicdomain/zero/1.0/)
