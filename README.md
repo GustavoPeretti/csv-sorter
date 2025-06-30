@@ -1,4 +1,4 @@
-# bubble-csv
+# csv-sorter
 
 Aplicação do algoritmo Bubble Sort para ordenar linhas por colunas em arquivos CSV.
 
