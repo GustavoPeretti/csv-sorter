@@ -98,7 +98,7 @@ void liberar_memoria(LinhaCSV *linhas, int n) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 10) {
+    if (argc != 3) {
         printf("Uso: %s <arquivo.csv> <coluna_para_ordenar>\n", argv[0]);
         printf("Colunas começam em 0 (0 = primeira coluna)\n");
         return 1;
