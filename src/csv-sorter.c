@@ -3,7 +3,6 @@
 #include <string.h>
 #include <ctype.h>
 
-
 // Constantes para limitar tamanhos máximos
 #define TAMANHO_LINHA 1024
 #define MAX_LINHAS 40000
@@ -13,19 +12,23 @@
 typedef struct {
     char **campos;       // Vetor de strings, cada campo da linha
     int num_campos;      // Quantos campos existem na linha
-    int eh_cabecalho;   // Marca se esta linha é o cabeçalho
+    int cabecalho;       // Marca se esta linha é o cabeçalho
 } LinhaCSV;
 
 // Função para remover espaços em branco no início e fim de uma string
 char* trim_whitespace(char* str) {
     char *end;
+
     while(isspace((unsigned char)*str)) str++;  // avança até o primeiro não-espaço
 
     if(*str == 0) return str; // string toda em branco
 
     end = str + strlen(str) - 1;
-    while(end > str && isspace((unsigned char)*end)) end--;  // retrocede até o último não-espaço
-    *(end+1) = 0;  // termina a string
+
+    while(end > str && isspace((unsigned char)*end)) end--; // retrocede até o último não-espaço
+
+    *(end+1) = 0; // termina a string
+
     return str;
 }
 
@@ -104,7 +107,8 @@ void bubble_sort_dados_linhas(LinhaCSV *linhas, int n, int coluna_alvo, int orde
 // Imprime uma linha formatada na tela (alinhada)
 void imprimir_linha_formatada(const LinhaCSV *linha) {
     for (int i = 0; i < linha->num_campos; i++) {
-        printf("%-20s ", linha->campos[i]); // alinhamento em 20 caracteres
+        printf("%s", linha->campos[i]);
+        if (i < linha->num_campos - 1) printf(",");
     }
     printf("\n");
 }
@@ -171,7 +175,7 @@ int main(int argc, char *argv[]) {
     linha_buffer[strcspn(linha_buffer, "\n")] = '\0';
     linhas[num_linhas].num_campos = 0;
     linhas[num_linhas].campos = malloc(MAX_COLUNAS * sizeof(char *));
-    linhas[num_linhas].eh_cabecalho = 1;
+    linhas[num_linhas].cabecalho = 1;
 
     char *token = strtok(linha_buffer, ",");
     while (token != NULL && linhas[num_linhas].num_campos < MAX_COLUNAS) {
@@ -188,7 +192,7 @@ int main(int argc, char *argv[]) {
         if (strlen(linha_buffer) > 0) {
             linhas[num_linhas].num_campos = 0;
             linhas[num_linhas].campos = malloc(MAX_COLUNAS * sizeof(char *));
-            linhas[num_linhas].eh_cabecalho = 0;
+            linhas[num_linhas].cabecalho = 0;
 
             token = strtok(linha_buffer, ",");
             while (token != NULL && linhas[num_linhas].num_campos < MAX_COLUNAS) {
